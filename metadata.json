@@ -1,0 +1,7 @@
+{
+  "name": "7-Eleven Finder Pro",
+  "description": "Find nearby 7-Eleven stores within a 5km radius using your current GPS location and Gemini's intelligent mapping capabilities.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
