@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { AppState, Coordinates, StoreInfo } from './types';
-import { findNearbyStores } from './services/geminiService';
-import StoreCard from './components/StoreCard';
+import { AppState, Coordinates, StoreInfo } from './types.ts';
+import { findNearbyStores } from './services/geminiService.ts';
+import StoreCard from './components/StoreCard.tsx';
 
 // Fix: Declare L for Leaflet global
 declare const L: any;
@@ -20,7 +20,7 @@ const App: React.FC = () => {
     stores: [],
     rawResponse: ''
   });
-  // Default to mocking (Ginza) to ensure user sees results immediately
+  
   const [isMocking, setIsMocking] = useState(true);
   const [showPanel, setShowPanel] = useState(true);
   
@@ -48,19 +48,30 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Handle auto-centering on resize
+  // Fix: Handle auto-centering and container resize robustly
   useEffect(() => {
     const handleResize = () => {
-      if (mapRef.current && state.location) {
-        mapRef.current.setView([state.location.latitude, state.location.longitude], mapRef.current.getZoom(), {
-          animate: false
-        });
+      if (mapRef.current) {
+        // Essential for Leaflet when container size changes via CSS/Media Queries
+        mapRef.current.invalidateSize();
+        
+        if (state.location) {
+          // Force center back to the user's red dot
+          mapRef.current.setView(
+            [state.location.latitude, state.location.longitude], 
+            mapRef.current.getZoom(), 
+            { animate: true }
+          );
+        }
       }
     };
 
     window.addEventListener('resize', handleResize);
+    // Also trigger when sidebar/bottom sheet toggles
+    handleResize(); 
+    
     return () => window.removeEventListener('resize', handleResize);
-  }, [state.location]);
+  }, [state.location, showPanel]);
 
   const clearMarkers = () => {
     markersRef.current.forEach(m => mapRef.current.removeLayer(m));
@@ -77,7 +88,6 @@ const App: React.FC = () => {
 
     if (userMarkerRef.current) mapRef.current.removeLayer(userMarkerRef.current);
     
-    // Updated User Icon: Larger, Red, Person Icon
     const userIcon = L.divIcon({
       className: 'user-location-marker',
       html: `
@@ -188,7 +198,6 @@ const App: React.FC = () => {
       }));
 
       updateMap(coords, result.stores);
-      // Automatically show panel when results come in on mobile if it was hidden
       if (result.stores.length > 0) setShowPanel(true);
     } catch (err: any) {
       setState(prev => ({ ...prev, loading: false, error: err.message }));
@@ -207,14 +216,13 @@ const App: React.FC = () => {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-white flex flex-col antialiased">
-      {/* Responsive Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center z-20 shadow-sm">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center z-20 shadow-sm shrink-0">
         <div className="flex items-center gap-2 md:gap-3">
           <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-lg md:rounded-xl bg-white shadow-md border border-gray-100 overflow-hidden p-1 md:p-1.5">
             <img src="https://upload.wikimedia.org/wikipedia/commons/4/40/7-eleven_logo.svg" alt="7-Eleven Logo" className="w-full h-full object-contain" />
           </div>
           <div>
-            <h1 className="text-sm md:text-lg font-black text-gray-800 leading-none tracking-tight">711 FINDER</h1>
+            <h1 className="text-sm md:text-lg font-black text-gray-800 leading-none tracking-tight uppercase">711 FINDER</h1>
             <p className="hidden md:block text-[10px] text-[#F37021] font-bold tracking-[0.2em] uppercase mt-0.5">Make Life Better</p>
           </div>
         </div>
@@ -253,48 +261,37 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 relative flex flex-col md:flex-row overflow-hidden">
-        {/* Map Container - Full Background */}
+      <div className="flex-1 relative overflow-hidden">
         <div id="map" className="absolute inset-0 z-0"></div>
 
-        {/* Responsive Results Panel: Floating Sidebar (Desktop) / Bottom Sheet (Mobile) */}
         <div 
           className={`
             absolute z-10 transition-all duration-500 ease-in-out flex flex-col border border-white/50
             bg-white/70 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.1)]
-            /* Mobile styles */
             inset-x-2 bottom-2 max-h-[45vh] rounded-3xl
-            /* Desktop styles */
             md:top-6 md:left-6 md:bottom-6 md:w-96 md:inset-x-auto md:max-h-none
             ${showPanel ? 'translate-y-0 md:translate-x-0 opacity-100' : 'translate-y-[calc(100%+2rem)] md:-translate-x-[calc(100%+4rem)] opacity-0 pointer-events-none'}
           `}
         >
-          {/* Panel Header */}
-          <div className="p-4 md:p-6 border-b border-gray-100/50 flex justify-between items-center sticky top-0 bg-white/40 backdrop-blur-md rounded-t-3xl z-10">
+          <div className="p-4 md:p-6 border-b border-gray-100/50 flex justify-between items-center sticky top-0 bg-white/40 backdrop-blur-md rounded-t-3xl z-10 shrink-0">
             <div>
               <h2 className="font-black text-gray-800 flex items-center gap-2 uppercase tracking-tight text-xs md:text-sm">
                 <i className="fa-solid fa-location-dot text-[#EE2737]"></i>
                 周边搜索结果
               </h2>
               <p className="text-[9px] md:text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-widest">
-                {state.loading ? '正在云端同步...' : `发现 ${state.stores.length} 个网点`}
+                {state.loading ? '正在同步云端...' : `发现 ${state.stores.length} 个网点`}
               </p>
             </div>
             <button 
               onClick={() => setShowPanel(false)}
-              className="bg-gray-100/50 hover:bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center transition-colors text-gray-400 md:hidden"
+              className="bg-gray-100/50 hover:bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center transition-colors text-gray-400"
             >
-              <i className="fa-solid fa-chevron-down"></i>
-            </button>
-            <button 
-              onClick={() => setShowPanel(false)}
-              className="hidden md:flex bg-gray-50/50 hover:bg-gray-100 w-8 h-8 rounded-full items-center justify-center transition-colors text-gray-400"
-            >
-              <i className="fa-solid fa-chevron-left"></i>
+              <i className="fa-solid fa-chevron-down md:hidden"></i>
+              <i className="fa-solid fa-chevron-left hidden md:block"></i>
             </button>
           </div>
 
-          {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 scroll-smooth scrollbar-hide">
             {state.error && (
               <div className="bg-red-50/80 p-4 rounded-2xl border border-red-100 text-red-600 text-sm animate-shake">
@@ -337,7 +334,6 @@ const App: React.FC = () => {
             ))}
           </div>
           
-          {/* Footer Coordinates */}
           {state.location && (
             <div className="p-3 md:p-4 bg-gray-50/30 backdrop-blur-sm border-t border-gray-100/50 rounded-b-3xl shrink-0">
               <div className="flex items-center justify-between text-[8px] md:text-[9px] text-gray-400 font-black uppercase tracking-widest">
@@ -350,7 +346,6 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {/* Floating Toggle Button for Sidebar/Bottom Sheet */}
         {!showPanel && (
           <button 
             onClick={() => setShowPanel(true)}
@@ -364,8 +359,6 @@ const App: React.FC = () => {
 
       <style>{`
         .leaflet-container { font-family: 'Inter', sans-serif; background: #f8f9fa; }
-        
-        /* Custom Popup Styles */
         .leaflet-popup-content-wrapper { 
           border-radius: 12px; 
           padding: 0; 
@@ -376,20 +369,17 @@ const App: React.FC = () => {
         }
         .leaflet-popup-content { margin: 0; }
         .leaflet-popup-tip { background: rgba(255,255,255,0.95); }
-        
         .user-popup .leaflet-popup-content-wrapper {
           background: rgba(238, 39, 55, 0.05);
           border: 1px solid rgba(238, 39, 55, 0.2);
           backdrop-filter: blur(12px);
         }
-
         @keyframes drop {
           0% { transform: translateY(-30px); opacity: 0; }
           60% { transform: translateY(5px); }
           100% { transform: translateY(0); opacity: 1; }
         }
         .animate-drop { animation: drop 0.5s ease-out forwards; }
-        
         .marker-pin-premium {
           width: 40px;
           height: 40px;
@@ -426,18 +416,14 @@ const App: React.FC = () => {
           margin-left: -8px;
           filter: blur(2px);
         }
-
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           25% { transform: translateX(-5px); }
           75% { transform: translateX(5px); }
         }
         .animate-shake { animation: shake 0.3s ease-in-out infinite alternate; animation-iteration-count: 2; }
-
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Smooth Mobile Transitions */
         @media (max-width: 768px) {
           .leaflet-touch .leaflet-control-zoom { display: none; }
         }
