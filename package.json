@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "echo 'Using static ESM structure, no build required.'"
+    "build": "rm -rf dist && mkdir -p dist && cp index.html index.tsx App.tsx types.ts metadata.json tsconfig.json dist/ && cp -R components services dist/ && sed -i \"s/API_KEY: \\\"\\\"/API_KEY: \\\"$API_KEY\\\"/g\" dist/index.html"
   },
   "dependencies": {
     "react": "^19.0.0",
