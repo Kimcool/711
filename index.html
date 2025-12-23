@@ -3,32 +3,31 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>711 FINDER - Make Life Better</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script>
-    // 确保 process.env 存在，实际值将由构建工具注入到打包后的 JS 中
+    // 注入 API_KEY 到全局 process 环境
     window.process = window.process || { env: { API_KEY: "" } };
+    
+    // 动态加载 Google Maps API
+    (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Re-order to speed up."):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+      key: process.env.API_KEY,
+      v: "weekly",
+      language: "zh-CN"
+    });
   </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
     body {
       font-family: 'Inter', sans-serif;
-      background-color: #f9fafb;
+      background-color: #f8f9fa;
       margin: 0;
       padding: 0;
       overflow: hidden;
-    }
-    #map {
-      height: 100%;
-      width: 100%;
-      z-index: 1;
-    }
-    .leaflet-control-attribution {
-      font-size: 8px !important;
+      /* 禁用移动端拉动刷新 */
+      overscroll-behavior-y: contain;
     }
   </style>
 <script type="importmap">
@@ -45,7 +44,6 @@
 </head>
 <body>
   <div id="root"></div>
-  <!-- 构建后这里的 index.tsx 会被 sed 命令自动替换为 index.js -->
   <script type="module" src="./index.tsx"></script>
 </body>
 </html>
