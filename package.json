@@ -4,6 +4,9 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "build": "echo 'Using static ESM structure, no build required.'"
+  },
   "dependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
