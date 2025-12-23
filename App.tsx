@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { AppState, Coordinates, StoreInfo } from './types.ts';
-import { findNearbyStores } from './services/geminiService.ts';
-import StoreCard from './components/StoreCard.tsx';
+import { AppState, Coordinates, StoreInfo } from './types';
+import { findNearbyStores } from './services/geminiService';
+import StoreCard from './components/StoreCard';
 
 // Fix: Declare L for Leaflet global
 declare const L: any;
@@ -48,15 +48,12 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Fix: Handle auto-centering and container resize robustly
+  // Handle auto-centering and container resize robustly
   useEffect(() => {
     const handleResize = () => {
       if (mapRef.current) {
-        // Essential for Leaflet when container size changes via CSS/Media Queries
         mapRef.current.invalidateSize();
-        
         if (state.location) {
-          // Force center back to the user's red dot
           mapRef.current.setView(
             [state.location.latitude, state.location.longitude], 
             mapRef.current.getZoom(), 
@@ -67,9 +64,7 @@ const App: React.FC = () => {
     };
 
     window.addEventListener('resize', handleResize);
-    // Also trigger when sidebar/bottom sheet toggles
     handleResize(); 
-    
     return () => window.removeEventListener('resize', handleResize);
   }, [state.location, showPanel]);
 

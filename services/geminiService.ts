@@ -50,20 +50,34 @@ export const findNearbyStores = async (coords: Coordinates): Promise<{ text: str
       };
     }).filter(s => !isNaN(s.lat!) && !isNaN(s.lng!));
 
-    // Match with grounding chunks to get official URIs
-    const finalStores = parsedStores.map(ps => {
-      const match = groundingChunks.find((chunk: any) => 
-        chunk.maps && (
-          ps.name.toLowerCase().includes(chunk.maps.title.toLowerCase()) || 
-          chunk.maps.title.toLowerCase().includes(ps.name.toLowerCase())
-        )
-      );
-      return {
-        ...ps,
-        uri: match?.maps?.uri,
-        title: match?.maps?.title
-      };
-    });
+    // Fallback: If no [DATA] lines found, try to extract from grounding chunks directly if available
+    let finalStores = parsedStores;
+    if (finalStores.length === 0 && groundingChunks.length > 0) {
+      finalStores = groundingChunks
+        .filter((chunk: any) => chunk.maps)
+        .map((chunk: any) => ({
+          name: chunk.maps.title || "7-Eleven",
+          address: "点击查看路线",
+          uri: chunk.maps.uri,
+          // Note: Coordinates might not be directly in the chunk without additional tools
+          // but we prioritize structured data for the map.
+        }));
+    } else {
+      // Match parsed stores with grounding chunks to get official URIs
+      finalStores = parsedStores.map(ps => {
+        const match = groundingChunks.find((chunk: any) => 
+          chunk.maps && (
+            ps.name.toLowerCase().includes(chunk.maps.title.toLowerCase()) || 
+            chunk.maps.title.toLowerCase().includes(ps.name.toLowerCase())
+          )
+        );
+        return {
+          ...ps,
+          uri: match?.maps?.uri,
+          title: match?.maps?.title
+        };
+      });
+    }
 
     return { text, stores: finalStores };
   } catch (error: any) {
